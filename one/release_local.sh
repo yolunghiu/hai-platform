@@ -2,7 +2,7 @@
 set -e
 
 RELEASE_VERSION=$(git rev-parse --short HEAD)
-IMAGE_REPO="${IMAGE_REPO:-registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform}"
+#IMAGE_REPO="${IMAGE_REPO:-registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform}"
 BUILD_DIR="build"
 rm -rf ${BUILD_DIR} && mkdir -p ${BUILD_DIR}
 echo "STEP: prepare build directory"
@@ -32,11 +32,14 @@ sed -i 's/ ubuntu:20.04/ nvcr.io\/nvidia\/cuda:11.3.0-devel-ubuntu20.04/' Docker
 RELEASE_VERSION=${RELEASE_VERSION}-202207
 fi
 
-DOCKER_BUILDKIT=1 docker build . -t ${IMAGE_REPO}:${RELEASE_VERSION} --build-arg HAI_VERSION=${RELEASE_VERSION} -f Dockerfile --progress plain
+#DOCKER_BUILDKIT=1 docker build . -t ${IMAGE_REPO}:${RELEASE_VERSION} --build-arg HAI_VERSION=${RELEASE_VERSION} -f Dockerfile --progress plain
+DOCKER_BUILDKIT=1 docker build . -t hai-platform-local:${RELEASE_VERSION} --build-arg HAI_VERSION=${RELEASE_VERSION} -f Dockerfile --progress plain
 echo "build hai success:"
-echo "  hai platform image: ${IMAGE_REPO}:${RELEASE_VERSION}"
+#echo "  hai platform image: ${IMAGE_REPO}:${RELEASE_VERSION}"
+echo "  hai platform image: hai-platform-local:${RELEASE_VERSION}"
 
-ID=`docker run -it -d --rm ${IMAGE_REPO}:${RELEASE_VERSION} sleep 60` > /dev/null
+#ID=`docker run -it -d --rm ${IMAGE_REPO}:${RELEASE_VERSION} sleep 60` > /dev/null
+ID=`docker run -it -d --rm  hai-platform-local:${RELEASE_VERSION} sleep 60` > /dev/null
 WHL_PATH=`docker exec ${ID} find /high-flyer/code/multi_gpu_runner_server/ -maxdepth 1 -name hai*.whl` > /dev/null
 WHL_PATH_ARR=(${WHL_PATH})
 for p in ${WHL_PATH_ARR[@]}; do docker cp ${ID}:${p} . > /dev/null; done
@@ -45,5 +48,5 @@ WHL_PATH_ARR=(`ls $(pwd)/hai*.whl`)
 echo "  hai-cli whl:"
 for f in ${WHL_PATH_ARR[@]}; do echo "    $f"; done
 
-echo "push hai-platform image:"
-docker push ${IMAGE_REPO}:${RELEASE_VERSION}
+#echo "push hai-platform image:"
+#docker push ${IMAGE_REPO}:${RELEASE_VERSION}

@@ -9,7 +9,6 @@ set_env() {
   # platform namespace, defaults to TASK_NAMESPACE
   : ${PLATFORM_NAMESPACE:=${TASK_NAMESPACE}}
   # shared filesystem root path
-#5  : ${SHARED_FS_ROOT:="/nfs-shared"}
   : ${SHARED_FS_ROOT:="/nfsroot"}
   # kubeconfig file path
   : ${KUBECONFIG:="$HOME/.kube/config"}
@@ -17,8 +16,7 @@ set_env() {
   : ${HAI_SERVER_ADDR:="47.98.195.232"}
   HAI_SERVER_ADDR=`echo ${HAI_SERVER_ADDR} | sed -e 's/^http:\/\///' -e 's/^https:\/\///'`
   # gpus per node
-#5  : ${NODE_GPUS:=4}
-  : ${NODE_GPUS:=0}
+  : ${NODE_GPUS:=1}
   # ib per node
   : ${HAS_RDMA_HCA_RESOURCE:=0}
 
@@ -28,12 +26,11 @@ set_env() {
   # jupyter compute nodes label will be set to ${MARS_PREFIX}_mars_group=${JUPYTER_GROUP}
   : ${JUPYTER_GROUP:="jupyter_cpu"}
   # training compute nodes list, format: "node1 node2"
-#5  : ${TRAINING_NODES:="cn-hangzhou.172.23.183.227"}
-  : ${TRAINING_NODES:="192.168.43.21"}
+  : ${TRAINING_NODES:="10.10.10.21"}
   # jupyter compute nodes list, format: "node1 node2", JUPYTER_NODES should differ from TRAINING_NODES
-  : ${JUPYTER_NODES:="192.168.43.31"}
+  : ${JUPYTER_NODES:="10.10.10.11"}
   # service nodes which running task manager, format: "node1 node2"
-  : ${MANAGER_NODES:="192.168.43.11"}
+  : ${MANAGER_NODES:="10.10.10.11"}
 
   # all in one image
   : ${BASE_IMAGE:="registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform:latest"}
@@ -41,7 +38,7 @@ set_env() {
   : ${TRAIN_IMAGE:="registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform:latest"}
   # ingress hostname serving studio, jupyter
 #5  : ${INGRESS_HOST:="nginx-ingress-lb.kube-system.c2c348f48c063452fa5738ec9caeb69ea.cn-hangzhou.alicontainer.com"}
-  : ${INGRESS_HOST:="nginx-ingress-lb.kube-system.c0505edf570484c43b1454ebf216a48ab.cn-beijing.alicontainer.com"}
+  : ${INGRESS_HOST:="hai.local"}
 
   INGRESS_HOST=`echo ${INGRESS_HOST} | sed -e 's/^http:\/\///' -e 's/^https:\/\///'`
   # ingress class
@@ -499,17 +496,16 @@ spec:
     spec:
 #      默认被注释了，这里不能注释？？
 #      这里的路径要在所有节点手动创建
-
-       initContainers:
-       - name: init-chmod
-         image: ${BASE_IMAGE}
-         imagePullPolicy: Always
-         command: ["bash", "-c", "chmod 777 /var/log/postgresql /var/log/redis"]
-         volumeMounts:
-         - mountPath: /var/log/postgresql
-           name: pglog
-         - mountPath: /var/log/redis
-           name: redislog
+#     initContainers:
+#     - name: init-chmod
+#       image: ${BASE_IMAGE}
+#       imagePullPolicy: Always
+#       command: ["bash", "-c", "chmod 777 /var/log/postgresql /var/log/redis"]
+#       volumeMounts:
+#       - mountPath: /var/log/postgresql
+#         name: pglog
+#       - mountPath: /var/log/redis
+#         name: redislog
       containers:
       - command:
         - bash
@@ -909,7 +905,6 @@ if [ $# == 0 ]; then
   exit 0
 fi
 
-echo "liuhy------------------------------------"
 
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
@@ -978,5 +973,4 @@ if [[ ${PROVIDER} == "docker-compose" ]]; then
 else
   echo "  kubectl --kubeconfig ${KUBECONFIG} -n ${PLATFORM_NAMESPACE} get po | grep hai-platform"
 fi
-i
 
