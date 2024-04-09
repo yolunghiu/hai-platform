@@ -9,16 +9,14 @@ set_env() {
   # platform namespace, defaults to TASK_NAMESPACE
   : ${PLATFORM_NAMESPACE:=${TASK_NAMESPACE}}
   # shared filesystem root path
-#5  : ${SHARED_FS_ROOT:="/nfs-shared"}
-  : ${SHARED_FS_ROOT:="/nfsroot"}
+  : ${SHARED_FS_ROOT:="/nfs-shared"}
   # kubeconfig file path
   : ${KUBECONFIG:="$HOME/.kube/config"}
   # server address
   : ${HAI_SERVER_ADDR:="47.98.195.232"}
   HAI_SERVER_ADDR=`echo ${HAI_SERVER_ADDR} | sed -e 's/^http:\/\///' -e 's/^https:\/\///'`
   # gpus per node
-#5  : ${NODE_GPUS:=4}
-  : ${NODE_GPUS:=0}
+  : ${NODE_GPUS:=4}
   # ib per node
   : ${HAS_RDMA_HCA_RESOURCE:=0}
 
@@ -28,28 +26,24 @@ set_env() {
   # jupyter compute nodes label will be set to ${MARS_PREFIX}_mars_group=${JUPYTER_GROUP}
   : ${JUPYTER_GROUP:="jupyter_cpu"}
   # training compute nodes list, format: "node1 node2"
-#5  : ${TRAINING_NODES:="cn-hangzhou.172.23.183.227"}
-  : ${TRAINING_NODES:="192.168.43.21"}
+  : ${TRAINING_NODES:="cn-hangzhou.172.23.183.227"}
   # jupyter compute nodes list, format: "node1 node2", JUPYTER_NODES should differ from TRAINING_NODES
-  : ${JUPYTER_NODES:="192.168.43.31"}
+  : ${JUPYTER_NODES:="cn-hangzhou.172.23.183.226"}
   # service nodes which running task manager, format: "node1 node2"
-  : ${MANAGER_NODES:="192.168.43.11"}
+  : ${MANAGER_NODES:="cn-hangzhou.172.23.183.226"}
 
   # all in one image
   : ${BASE_IMAGE:="registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform:latest"}
   # train image
   : ${TRAIN_IMAGE:="registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform:latest"}
   # ingress hostname serving studio, jupyter
-#5  : ${INGRESS_HOST:="nginx-ingress-lb.kube-system.c2c348f48c063452fa5738ec9caeb69ea.cn-hangzhou.alicontainer.com"}
-  : ${INGRESS_HOST:="nginx-ingress-lb.kube-system.c0505edf570484c43b1454ebf216a48ab.cn-beijing.alicontainer.com"}
-
+  : ${INGRESS_HOST:="nginx-ingress-lb.kube-system.c2c348f48c063452fa5738ec9caeb69ea.cn-hangzhou.alicontainer.com"}
   INGRESS_HOST=`echo ${INGRESS_HOST} | sed -e 's/^http:\/\///' -e 's/^https:\/\///'`
   # ingress class
   : ${INGRESS_CLASS:="nginx"}
 
   # platform user info, format: "user1:uid1:passwd,user2:uid2:passwd"
-#  : ${USER_INFO:="haiadmin:10020:xxxxxxxx"}
-  : ${USER_INFO:="haiadmin:10020:haiadmin"}
+  : ${USER_INFO:="haiadmin:10020:xxxxxxxx"}
   # postgres password
   : ${POSTGRES_USER:="root"}
   : ${POSTGRES_PASSWORD:="root"}
@@ -82,7 +76,6 @@ set_env() {
   USER_NAMES=()
   USER_IDS=()
   USER_TOKENS=()
-#  /nfsroot/hai-platform
   HAI_PLATFORM_PATH=${SHARED_FS_ROOT}/hai-platform
 }
 
@@ -117,16 +110,15 @@ print_usage() {
   print_step '  step 3: "hai-up run -c config.sh" to start the all-in-one hai-platform.'
 }
 
-#5
 print_config_script() {
   echo -e '    export TASK_NAMESPACE="hai-platform" # task namespace
     export SHARED_FS_ROOT="/nfs-shared" # shared filesystem root path
     export MARS_PREFIX="hai"
     export TRAINING_GROUP="training" # training compute nodes label will be set to ${MARS_PREFIX}_mars_group=${TRAINING_GROUP}
     export JUPYTER_GROUP="jupyter_cpu" # jupyter compute nodes label will be set to ${MARS_PREFIX}_mars_group=${JUPYTER_GROUP}
-    export TRAINING_NODES="192.168.43.21" # training compute nodes list, format: "node1 node2"
-    export JUPYTER_NODES="192.168.43.31" # jupyter compute nodes list, format: "node1 node2", JUPYTER_NODES should differ from TRAINING_NODES
-    export MANAGER_NODES="192.168.43.11" # service nodes which running task manager, format: "node1 node2"
+    export TRAINING_NODES="cn-hangzhou.172.23.183.227" # training compute nodes list, format: "node1 node2"
+    export JUPYTER_NODES="cn-hangzhou.172.23.183.226" # jupyter compute nodes list, format: "node1 node2", JUPYTER_NODES should differ from TRAINING_NODES
+    export MANAGER_NODES="cn-hangzhou.172.23.183.226" # service nodes which running task manager, format: "node1 node2"
     export INGRESS_HOST="nginx-ingress-lb.kube-system.c2c348f48c063452fa5738ec9caeb69ea.cn-hangzhou.alicontainer.com" # ingress hostname serving studio, jupyter，no http prefix needed
     export USER_INFO="haiadmin:10020:xxxxxxxx" # platform user info, format: "user1:uid1:passwd,user2:uid2:passwd"
     export ROOT_USER="haiadmin" # username of the root user, must exist in $USER_INFO
@@ -497,19 +489,16 @@ spec:
       labels:
         app: hai-platform
     spec:
-#      默认被注释了，这里不能注释？？
-#      这里的路径要在所有节点手动创建
-
-       initContainers:
-       - name: init-chmod
-         image: ${BASE_IMAGE}
-         imagePullPolicy: Always
-         command: ["bash", "-c", "chmod 777 /var/log/postgresql /var/log/redis"]
-         volumeMounts:
-         - mountPath: /var/log/postgresql
-           name: pglog
-         - mountPath: /var/log/redis
-           name: redislog
+      # initContainers:
+      # - name: init-chmod
+      #   image: ${BASE_IMAGE}
+      #   imagePullPolicy: Always
+      #   command: ["bash", "-c", "chmod 777 /var/log/postgresql /var/log/redis"]
+      #   volumeMounts:
+      #   - mountPath: /var/log/postgresql
+      #     name: pglog
+      #   - mountPath: /var/log/redis
+      #     name: redislog
       containers:
       - command:
         - bash
@@ -619,7 +608,6 @@ spec:
       priorityClassName: system-cluster-critical
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
-#      这里的路径要在所有节点手动创建
       volumes:
       - hostPath:
           path: ${HAI_PLATFORM_PATH}/kubeconfig
@@ -909,8 +897,6 @@ if [ $# == 0 ]; then
   exit 0
 fi
 
-echo "liuhy------------------------------------"
-
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     -h | --help)
@@ -978,5 +964,3 @@ if [[ ${PROVIDER} == "docker-compose" ]]; then
 else
   echo "  kubectl --kubeconfig ${KUBECONFIG} -n ${PLATFORM_NAMESPACE} get po | grep hai-platform"
 fi
-i
-
