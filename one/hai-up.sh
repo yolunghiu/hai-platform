@@ -3,6 +3,7 @@
 set -e
 set -a
 
+# 初始化一系列的环境变量，这些环境变量在后续的脚本中会被用到
 set_env() {
   # task namespace
   : ${TASK_NAMESPACE:="hai-platform"}
@@ -26,18 +27,18 @@ set_env() {
   # jupyter compute nodes label will be set to ${MARS_PREFIX}_mars_group=${JUPYTER_GROUP}
   : ${JUPYTER_GROUP:="jupyter_cpu"}
   # training compute nodes list, format: "node1 node2"
-  : ${TRAINING_NODES:="10.10.10.21"}
+  : ${TRAINING_NODES:="worker"}
   # jupyter compute nodes list, format: "node1 node2", JUPYTER_NODES should differ from TRAINING_NODES
-  : ${JUPYTER_NODES:="10.10.10.11"}
+  : ${JUPYTER_NODES:="master"}
   # service nodes which running task manager, format: "node1 node2"
-  : ${MANAGER_NODES:="10.10.10.11"}
+  : ${MANAGER_NODES:="master"}
 
   # all in one image
   : ${BASE_IMAGE:="registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform:latest"}
   # train image
   : ${TRAIN_IMAGE:="registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform:latest"}
   # ingress hostname serving studio, jupyter
-#5  : ${INGRESS_HOST:="nginx-ingress-lb.kube-system.c2c348f48c063452fa5738ec9caeb69ea.cn-hangzhou.alicontainer.com"}
+#  : ${INGRESS_HOST:="nginx-ingress-lb.kube-system.c2c348f48c063452fa5738ec9caeb69ea.cn-hangzhou.alicontainer.com"}
   : ${INGRESS_HOST:="hai.local"}
 
   INGRESS_HOST=`echo ${INGRESS_HOST} | sed -e 's/^http:\/\///' -e 's/^https:\/\///'`
@@ -83,6 +84,7 @@ set_env() {
   HAI_PLATFORM_PATH=${SHARED_FS_ROOT}/hai-platform
 }
 
+# 这个函数的作用是打印蓝色的文本到控制台，通常用于突出显示步骤或重要信息
 print_step() {
   echo -e "\033[34m${1} \033[0m"
 }
@@ -114,7 +116,6 @@ print_usage() {
   print_step '  step 3: "hai-up run -c config.sh" to start the all-in-one hai-platform.'
 }
 
-#5
 print_config_script() {
   echo -e '    export TASK_NAMESPACE="hai-platform" # task namespace
     export SHARED_FS_ROOT="/nfs-shared" # shared filesystem root path
@@ -151,6 +152,7 @@ print_config_script() {
     export HAI_SERVER_ADDR="47.98.195.232" # current server address'
 }
 
+# 在执行可能会对系统产生重大影响的操作之前，向用户确认他们是否真的要继续
 confirm() {
     message="${1}. Continue? (Yy/Nn)"
     read -p "${message}" -n 1 -r
@@ -185,9 +187,12 @@ parse_host_info() {
   TOTAL_NODES_ARRAY+=(${TRAINING_NODES_ARRAY[@]})
   TOTAL_NODES_ARRAY+=(${JUPYTER_NODES_ARRAY[@]})
   TOTAL_NODES_DEDUP=($(for n in ${TOTAL_NODES_ARRAY[@]}; do echo $n; done | sort -u))
+  # shellcheck disable=SC2145
   echo "training nodes: ${TRAINING_NODES_ARRAY[@]}"
+  # shellcheck disable=SC2145
   echo "jupyter nodes: ${JUPYTER_NODES_ARRAY[@]}"
   if [[ ${#TOTAL_NODES_ARRAY[@]} != ${#TOTAL_NODES_DEDUP[@]} ]]; then
+    # shellcheck disable=SC2145
     echo "duplicated nodes: ${TOTAL_NODES_ARRAY[@]}, please fix"
     exit 1
   fi
@@ -726,6 +731,7 @@ EOF
     envsubst < ${HAI_PLATFORM_PATH}/${template}.in > ${HAI_PLATFORM_PATH}/${template}
     rm ${HAI_PLATFORM_PATH}/${template}.in
   done
+  # shellcheck disable=SC2145
   echo "generated rendered config in ${HAI_PLATFORM_PATH}: ${TEMPLATES[@]}"
 }
 
@@ -789,6 +795,7 @@ parse_env() {
   fi
 }
 
+# 在${SHARED_FS_ROOT}/hai-platform下创建文件夹
 create_workspace() {
   # step: prepare shared fs directory
   print_step "STEP: prepare shared fs platform directory"
@@ -856,6 +863,7 @@ create_kubeconfig() {
   fi
 }
 
+# 执行kubectl apply -f
 setup() {
   print_step "STEP: start hai-platform"
   if [[ ${PROVIDER} == "docker-compose" ]]; then
@@ -886,6 +894,7 @@ setup() {
   fi
 }
 
+# 执行kubectl delete -f
 teardown() {
     print_step "STEP: tear down"
     if [[ ${PROVIDER} == "docker-compose" ]]; then
@@ -905,7 +914,19 @@ if [ $# == 0 ]; then
   exit 0
 fi
 
-
+#hai-up config/run/up/dryrun/down/upgrade [option]
+#where:
+#  config:  print config script
+#  run/up:  run hai platform
+#  dryrun:  generate config template
+#  down:    tear down hai platform
+#  upgrade: self upgrade hai-cli/hai-up utility
+#  option:
+#    -h/--help:      show this help text
+#    -p/--provider:  k8s/docker-compose, default to k8s
+#    -c/--config:    show config scripts to setup environment variables,
+#                    if not specified, current shell environment will be used,
+#                    if not shell environment exists, default value in 'hai-up config' will be use
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     -h | --help)
