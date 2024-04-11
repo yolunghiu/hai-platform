@@ -12,7 +12,9 @@ db = 'mars_db'
 user = 'root'
 password = 'root'
 host = '127.0.0.1'
-port = 15432
+# 默认对外暴露的端口是5432，鉴于后端报错，这里改了试试
+#port = 15432
+port = 5432
 charset = 'utf8'
 pool_size = 20
 [database.postgres.secondary]
@@ -20,12 +22,14 @@ db = 'mars_db'
 user = 'root'
 password = 'root'
 host = '127.0.0.1'
-port = 15432
+#port = 15432
+port = 5432
 charset = 'utf8'
 pool_size = 20
 [database.redis]
 host = '127.0.0.1'
-port = 16379
+#port = 16379
+port = 6379
 db = 0
 password = 'root'
 
