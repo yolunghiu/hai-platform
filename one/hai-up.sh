@@ -34,9 +34,11 @@ set_env() {
   : ${MANAGER_NODES:="master"}
 
   # all in one image
-  : ${BASE_IMAGE:="registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform:latest"}
+#  : ${BASE_IMAGE:="registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform:latest"}
+  : ${BASE_IMAGE:="10.10.10.11:1180/hfai/hai-platform:c59aa45"}
   # train image
-  : ${TRAIN_IMAGE:="registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform:latest"}
+#  : ${TRAIN_IMAGE:="registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform:latest"}
+  : ${TRAIN_IMAGE:="10.10.10.11:1180/hfai/hai-platform:c59aa45"}
   # ingress hostname serving studio, jupyter
 #  : ${INGRESS_HOST:="nginx-ingress-lb.kube-system.c2c348f48c063452fa5738ec9caeb69ea.cn-hangzhou.alicontainer.com"}
   : ${INGRESS_HOST:="hai.local"}

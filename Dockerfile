@@ -11,6 +11,15 @@ RUN --mount=type=cache,sharing=private,target=/var/cache/apt \
     gcc automake autoconf libtool make gdb strace moreutils dnsutils pv rsync vim less git libgomp1 lsb-release jq \
     libcap-dev libcap2-bin libnuma-dev numactl libopenmpi-dev \
     haproxy redis postgresql attr
+# apt install 国内源
+#RUN --mount=type=cache,sharing=private,target=/var/cache/apt \
+#  sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+#  apt-get update && DEBIAN_FRONTEND=noninteractive TZ=Asia/Shanghai apt-get -y install tzdata && \
+#  apt-get install -y python3.8 python3-pip tzdata libcurl4-openssl-dev libssl-dev net-tools \
+#    apache2-utils infiniband-diags g++ libpq-dev python3-dev openssh-server sudo curl python-numpy \
+#    gcc automake autoconf libtool make gdb strace moreutils dnsutils pv rsync vim less git libgomp1 lsb-release jq \
+#    libcap-dev libcap2-bin libnuma-dev numactl libopenmpi-dev \
+#    haproxy redis postgresql attr
 
 RUN ln -sf /usr/bin/python3.8 /usr/bin/python
 
@@ -51,10 +60,14 @@ RUN --mount=type=cache,target=/root/.cache/pip \
   --trusted-host=pypi.tuna.tsinghua.edu.cn
 
 # 安装 studio
-RUN pip install jupyterlab_hai_platform_ext && \
-  mkdir -p /marsv2/scripts/studio && \
-  wget https://github.com/HFAiLab/hai-platform-studio/releases/download/v0.19.0-alpha.1682329905.32209c5e/hai-studio-linux-x64-0.19.0-alpha.1682329905.32209c5e.tar.gz | tar zxvf - -C /marsv2/scripts/studio
-#  curl https://github.com/HFAiLab/hai-platform-studio/releases/download/v0.19.0-alpha.1682329905.32209c5e/hai-studio-linux-x64-0.19.0-alpha.1682329905.32209c5e.tar.gz | tar zxvf - -C /marsv2/scripts/studio
+RUN pip install jupyterlab_hai_platform_ext --index-url=https://pypi.tuna.tsinghua.edu.cn/simple
+RUN mkdir -p /marsv2/scripts/studio && \
+    wget http://10.10.10.11:8000/hai-studio-linux-x64-0.19.0-alpha.1682329905.32209c5e.tar.gz -O /tmp/hai-studio.tar.gz && \
+    tar zxvf /tmp/hai-studio.tar.gz -C /marsv2/scripts/studio && \
+    rm /tmp/hai-studio.tar.gz
+#  wget http://10.10.10.11:8000/hai-studio-linux-x64-0.19.0-alpha.1682329905.32209c5e.tar.gz | tar zxvf - -C /marsv2/scripts/studio
+#  wget https://github.com/HFAiLab/hai-platform-studio/releases/download/v0.19.0-alpha.1682329905.32209c5e/hai-studio-linux-x64-0.19.0-alpha.1682329905.32209c5e.tar.gz | tar zxvf - -C /marsv2/scripts/studio
+#  curl https://github.com/HFAiLab/hai-platform-studio/releases/download/v0.19.0-alpha.1682329905.32209c5e/hai-studio-linux-x64-0.19.0-alpha.1682329905.32209c5e.tar.gz | tar zxvf - -C /marsv2/scripts/studio \
 
 ############################################################
 
@@ -77,4 +90,4 @@ ENV HAIENV_PATH=/hf_shared/hfai_envs/platform HAI_VERSION=${HAI_VERSION}
 RUN --mount=type=bind,from=packaging,source=/tmp,target=/tmp \
   pip install /tmp/hai*.whl --index-url=https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host=pypi.tuna.tsinghua.edu.cn
 
-COPY --from=packaging /high-flyer/code/multi_gpu_runner_server /tmp/hai*.whl /high-flyer/code/multi_gpu_runner_server
+COPY --from=packaging /high-flyer/code/multi_gpu_runner_server /tmp/hai*.whl /high-flyer/code/multi_gpu_runner_server/

@@ -32,6 +32,7 @@ sed -i 's/ ubuntu:20.04/ nvcr.io\/nvidia\/cuda:11.3.0-devel-ubuntu20.04/' Docker
 RELEASE_VERSION=${RELEASE_VERSION}-202207
 fi
 
+#DOCKER_BUILDKIT=1 docker build --build-arg http_proxy=http://127.0.0.1:7890 --build-arg https_proxy=http://127.0.0.1:7890 . -t ${IMAGE_REPO}:${RELEASE_VERSION} --build-arg HAI_VERSION=${RELEASE_VERSION} -f Dockerfile --progress plain
 DOCKER_BUILDKIT=1 docker build . -t ${IMAGE_REPO}:${RELEASE_VERSION} --build-arg HAI_VERSION=${RELEASE_VERSION} -f Dockerfile --progress plain
 echo "build hai success:"
 echo "  hai platform image: ${IMAGE_REPO}:${RELEASE_VERSION}"

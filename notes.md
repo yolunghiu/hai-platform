@@ -9,6 +9,8 @@
   * [hai-cli提交任务](#hai-cli提交任务)
     * [一些有用的配置](#一些有用的配置)
     * [使用hai-cli](#使用hai-cli)
+  * [hai-platform代码](#hai-platform代码)
+  * [hai-cli使用报错问题排查](#hai-cli使用报错问题排查)
 <!-- TOC -->
 
 ## 本地部署实验环境说明
@@ -166,7 +168,10 @@
    - 在这个配置文件中，定义了多个 `program` 部分，每个部分对应一个需要 `supervisord` 管理的进程。每个 `program` 部分都包含了一些配置项，如 `command`（启动进程的命令）、`directory`（进程的工作目录）、`autostart`（是否在 `supervisord` 启动时自动启动该进程）、`autorestart`（在进程意外退出时是否自动重启）等。 
    - 在你的项目中，这个配置文件被用于启动和管理如 `k8swatcher`、`launcher`、`scheduler`、`query_server`、`operating_server`、`ugc_server`、`monitor_server`、`haproxy` 和 `studio` 等进程。 
    - 在 `entrypoint.sh` 脚本中，如果 `MANUAL_START_SEVER` 环境变量不等于 "1"，则会使用 `supervisord -c one/supervisord.conf` 命令启动 `supervisord`，并使用这个配置文件来管理进程。
-3. 通过kubectl logs hai-platform...可以查看到初始化日志
+
+## hai-cli使用报错问题排查
+
+1. 通过kubectl logs hai-platform...可以查看到初始化日志
     ```log
     2024-04-09 15:01:51,629 INFO exited: scheduler (exit status 1; not expected)
     2024-04-09 15:01:51,638 INFO spawned: 'scheduler' with pid 387
@@ -178,3 +183,82 @@
     ```
    - scheduler反复重启
    - 查看one/supervisord.conf:64
+2. 查看log文件：/nfsroot/hai-platform/operating_0.log
+    ```log
+    ...
+    sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server at "127.0.0.1", port 15432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+    ...
+    ```
+3. 查看svc
+    ```bash
+    (hai) ➜  one git:(main) ✗ k get svc -n hai-platform
+    NAME               TYPE           CLUSTER-IP   EXTERNAL-IP     PORT(S)                                                     AGE
+    hai-platform-svc   LoadBalancer   10.68.30.2   192.168.1.201   5432:31171/TCP,6379:32370/TCP,80:30851/TCP,8080:31172/TCP   42m
+    ``` 
+4. 问题定位
+   1. 基于上述log，猜测是因为端口号不对，导致连接失败，在代码中全局搜索15432，发现是在`one/one_etc/core.toml`文件中
+   2. 进一步定位，发现该配置文件在`one/entrypoint.sh`中被使用，这个脚本把这个配置文件拷贝到了系统资源目录下
+   3. 进一步定位，发现`one/supervisord.conf`配置文件中加载了该目录下的配置，用于创建守护进程`[program:scheduler]`
+   4. 查看平台k8s部署文件，`entrypoint.sh`用于创建pod时执行初始化操作
+   ```yaml
+    containers:
+    - command:
+      - bash
+      - -c
+      - cd /high-flyer/code/multi_gpu_runner_server && bash one/entrypoint.sh
+   
+   ```
+   5. `kubectl exec -it hai-platform-0 -n hai-platform -- bash`进入pod查看配置文件，发现`core.toml`文件中的端口号是`15432`、`16379`
+   6. **至此，猜测大概率是端口问题**
+4. 问题解决
+   1. 重新构建镜像
+      1. 参考readme
+      ```txt
+      # replace IMAGE_REPO with your own repo
+      $ IMAGE_REPO=registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform bash one/release.sh
+      build hai success:
+      hai-platform image: registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform:fa07f13
+      hai-cli whl:
+      /home/hai-platform/build/hai-1.0.0+fa07f13-py3-none-any.whl
+      /home/hai-platform/build/haienv-1.4.1+fa07f13-py3-none-any.whl
+      /home/hai-platform/build/haiworkspace-1.0.0+fa07f13-py3-none-any.whl
+      ```
+      2. 修改Dockerfile，解决github无法连接问题，过程略，参考git log
+      3. `IMAGE_REPO=10.10.10.11:1180/hai-platform bash one/release.sh`
+   2. 本地搭建harbor，管理镜像
+      1. 搭建过程略
+      2. 使用http，禁用https，containerd运行时需要修改配置文件，集群所有节点都要改，参考：https://blog.csdn.net/lhf2112/article/details/117195731
+   3. 修改hai-up.sh中的镜像地址为：`: ${BASE_IMAGE:="10.10.10.11:1180/hfai/hai-platform:c59aa45"}`，重新部署
+   4. 效果
+   ```bash
+   (hai) ➜  one git:(main) ✗ hai-cli python /nfsroot/hai-platform/workspace/haiadmin/test.py -- -n 1
+    WARNING:  提交的任务将会继承当前环境 ，有可能造成环境不兼容，如不想继承当前环境请添加参数 --no_inherit 
+   提交任务成功，定义如下
+   --------------------------------------------------------------------------------
+   name: test.py
+   priority: 30
+   resource:
+     group: default
+     image: default
+     node_count: 1
+   spec:
+     entrypoint: test.py
+     parameters: ''
+     workspace: /nfsroot/hai-platform/workspace/haiadmin
+   version: 2
+   
+   --------------------------------------------------------------------------------
+   ==================== experiment ====================
+   +----+---------+-------+--------------+-----------+---------------+----------------------------+
+   | id | nb_name | nodes | chain_status | task_type | suspend_count | created_at                 |
+   +====+=========+=======+==============+===========+===============+============================+
+   | 1  | test.py | 1     |              | training  | 0             | 2024-04-11 16:19:35.356763 |
+   +----+---------+-------+--------------+-----------+---------------+----------------------------+
+   任务创建完成，请等待调度，可以使用以下接口查询
+      hai-cli status test.py  # 查看任务状态
+      hai-cli logs -f test.py # 查看任务日志
+      hai-cli stop test.py # 关闭任务
+   ```
+
+
