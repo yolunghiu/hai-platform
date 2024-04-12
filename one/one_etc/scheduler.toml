@@ -1,7 +1,8 @@
 [scheduler]
 re_signal = 60
 send_fetion = 120
-default_group = 'jd_test_a100'
+#default_group = 'jd_test_a100'
+default_group = 'training'
 error_node_meta_group = "err_nodes"
 rotate_num = 5
 
