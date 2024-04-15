@@ -25,6 +25,7 @@
 ## 集群搭建
 
 1. 使用kubeasz搭建双节点集群
+    - 如果之前装过集群，需要先清理集群，ref：https://blog.51cto.com/u_12482901/5735949
     - ref: https://github.com/easzlab/kubeasz/blob/master/docs/setup/00-planning_and_overall_intro.md
     - 直接规划两个节点，一个master，一个worker
     - etcd配置一个，复用master节点
@@ -34,11 +35,21 @@
     - ref: https://www.lixueduan.com/posts/cloudnative/01-metallb/
     - 节点池的配置需要理解MetalLB的工作原理，不能与集群节点IP重复，不然会有冲突（具体GPT）
     - 节点池配置为192.168.1.200-192.168.1.210
+    - cmd
+      ```bash
+      kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml
+      kubectl apply -f IPAddressPool.yaml -f L2Advertisement.yaml
+      ```
 3. 部署ingress controller：ingress-nginx
     - ref: https://www.cnblogs.com/linuxk/p/18105831
     - ref: https://www.cnblogs.com/syushin/p/15271304.html
     - 使用helm安装，注意修改配置文件，不要直接安装，k8s域名下的镜像拉取不到
     - 下载链接: https://github.com/kubernetes/ingress-nginx
+    - cmd
+      ```bash
+      kubectl create ns ingress-nginx
+      helm install ingress-nginx -n ingress-nginx .
+      ```
 4. 在所有节点上配置nfs，过程略，**注意客户端要设置成每次开机自动挂载**
 5. 配置ingress_host：获取metallb为ingress提供的外部IP，在/etc/hosts文件中绑定自定义域名
    - `192.168.1.200 hai.local`
@@ -225,11 +236,13 @@
       /home/hai-platform/build/haiworkspace-1.0.0+fa07f13-py3-none-any.whl
       ```
       2. 修改Dockerfile，解决github无法连接问题，过程略，参考git log
-      3. `IMAGE_REPO=10.10.10.11:1180/hai-platform bash one/release.sh`
+      3. `IMAGE_REPO=10.10.10.11:1180/hfai/hai-platform bash one/release.sh`
    2. 本地搭建harbor，管理镜像
       1. 搭建过程略
       2. 使用http，禁用https，containerd运行时需要修改配置文件，集群所有节点都要改，参考：https://blog.csdn.net/lhf2112/article/details/117195731
    3. 修改hai-up.sh中的镜像地址为：`: ${BASE_IMAGE:="10.10.10.11:1180/hfai/hai-platform:c59aa45"}`，重新部署
+      - `cd /root`
+      - `python -m http.server 8000`
    4. 效果
    ```bash
    (hai) ➜  one git:(main) ✗ hai-cli python /nfsroot/hai-platform/workspace/haiadmin/test.py -- -n 1

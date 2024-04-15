@@ -1,4 +1,4 @@
-# sHAI Platform
+# HAI Platform
 
 ![Header](https://img.shields.io/badge/-hai--platform-orange)
 [![License](https://img.shields.io/badge/license-LGPL-4EB1BB)](https://www.gnu.org/licenses/lgpl-3.0.en.html)
