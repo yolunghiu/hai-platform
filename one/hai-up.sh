@@ -13,8 +13,8 @@ set_env() {
   : ${SHARED_FS_ROOT:="/nfsroot"}
   # kubeconfig file path
   : ${KUBECONFIG:="$HOME/.kube/config"}
-  # server address
-  : ${HAI_SERVER_ADDR:="47.98.195.232"}
+  # server address(部署之前还没有server，所以这里应该是master节点的ip？)
+  : ${HAI_SERVER_ADDR:="192.168.1.144"}
   HAI_SERVER_ADDR=`echo ${HAI_SERVER_ADDR} | sed -e 's/^http:\/\///' -e 's/^https:\/\///'`
   # gpus per node
   : ${NODE_GPUS:=1}
@@ -27,18 +27,19 @@ set_env() {
   # jupyter compute nodes label will be set to ${MARS_PREFIX}_mars_group=${JUPYTER_GROUP}
   : ${JUPYTER_GROUP:="jupyter_cpu"}
   # training compute nodes list, format: "node1 node2"
-  : ${TRAINING_NODES:="worker"}
+  : ${TRAINING_NODES:="192.168.1.195"}
   # jupyter compute nodes list, format: "node1 node2", JUPYTER_NODES should differ from TRAINING_NODES
-  : ${JUPYTER_NODES:="master"}
+  : ${JUPYTER_NODES:="192.168.1.144"}
   # service nodes which running task manager, format: "node1 node2"
-  : ${MANAGER_NODES:="master"}
+  : ${MANAGER_NODES:="192.168.1.144"}
 
   # all in one image
 #  : ${BASE_IMAGE:="registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform:latest"}
-  : ${BASE_IMAGE:="10.10.10.11:1180/hfai/hai-platform:c59aa45"}
+#  : ${BASE_IMAGE:="10.10.10.11:1180/hfai/hai-platform:c59aa45"}
+  : ${BASE_IMAGE:="10.10.10.11:1180/hfai/hai-platform:72c2d49"}
   # train image
 #  : ${TRAIN_IMAGE:="registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform:latest"}
-  : ${TRAIN_IMAGE:="10.10.10.11:1180/hfai/hai-platform:c59aa45"}
+  : ${TRAIN_IMAGE:="registry.cn-hangzhou.aliyuncs.com/hfai/hai-platform:latest-202207"}
   # ingress hostname serving studio, jupyter
 #  : ${INGRESS_HOST:="nginx-ingress-lb.kube-system.c2c348f48c063452fa5738ec9caeb69ea.cn-hangzhou.alicontainer.com"}
   : ${INGRESS_HOST:="hai.local"}
@@ -82,7 +83,6 @@ set_env() {
   USER_NAMES=()
   USER_IDS=()
   USER_TOKENS=()
-#  /nfsroot/hai-platform
   HAI_PLATFORM_PATH=${SHARED_FS_ROOT}/hai-platform
 }
 
@@ -151,7 +151,7 @@ print_config_script() {
     export PLATFORM_NAMESPACE="${TASK_NAMESPACE}" # platform namespace
 
     # for docker-compose provider
-    export HAI_SERVER_ADDR="47.98.195.232" # current server address'
+    export HAI_SERVER_ADDR="192.168.1.144" # current server address'
 }
 
 # 在执行可能会对系统产生重大影响的操作之前，向用户确认他们是否真的要继续
